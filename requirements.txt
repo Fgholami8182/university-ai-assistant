@@ -1,0 +1,20 @@
+flask
+sentence-transformers
+torch
+groq
+requests
+python-dotenv
+waitress
+flask-limiter
+
+
+
+
+
+
+اطلاعات سرور: 193.162.129.238
+Administrator
+3j1ZilJ2C8
+آدرس دسترسی به سرور aidemo.bardiasoft.ir
+
+http://193.162.129.238:5000/

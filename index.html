@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>🤖 دستیار دانشگاهی</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v34.0.0/dist/font-face.css" rel="stylesheet">
+<style>
+:root{
+  --logo-red: #c62828;
+  --logo-green: #1b8f4a;
+  --bg-from: #f8fff8;
+  --bg-to: #fff7f7;
+  --bubble-radius: 18px;
+}
+body{ font-family: "Vazirmatn", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
+.bubble { white-space: pre-wrap; line-height: 1.45; }
+.btn-primary { background: var(--logo-red); }
+.btn-primary:hover { filter: brightness(0.94); }
+.bot-bubble-logo { width: 28px; height: 28px; object-fit: contain; border-radius: 6px; }
+.top-border { border-top-width: 6px; border-top-color: var(--logo-red); }
+.cooldown { font-size: 0.9rem; color: #6b7280; }
+.modal-backdrop { position: fixed; inset: 0; background: rgba(2,6,23,0.5); display: flex; align-items: center; justify-content: center; z-index: 60; }
+.modal-card { width: 95%; max-width: 760px; background: white; border-radius: 14px; padding: 20px; box-shadow: 0 8px 30px rgba(2,6,23,0.15); direction: rtl; text-align: right; }
+.about-top { position: absolute; top: 12px; left: 16px; background: white; padding: 8px 12px; border-radius: 12px; box-shadow: 0 2px 8px rgba(2,6,23,0.06); cursor: pointer; font-weight: 600; color: var(--logo-green); }
+</style>
+</head>
+<body class="min-h-screen flex items-center justify-center bg-gradient-to-b from-[var(--bg-from)] to-[var(--bg-to)] p-4">
+
+<div class="about-top" id="aboutTopBtn">درباره</div>
+<div class="w-full max-w-3xl">
+
+<!-- VERIFY BOX -->
+<div id="verify-box" class="bg-white shadow-lg rounded-2xl p-6 top-border">
+  <div class="flex items-center justify-center mb-4">
+    <img src="{{ url_for('static', filename='shahed_logo.png') }}" alt="لوگو دانشگاه" class="h-20">
+  </div>
+  <h2 class="text-center text-xl font-semibold text-[var(--logo-green)] mb-2">ورود به دستیار دانشگاهی</h2>
+  <p class="text-center text-gray-600 mb-4">برای جلوگیری از ورود ربات‌ها، لطفاً به سؤال زیر پاسخ دهید:</p>
+  <div class="flex items-center justify-center gap-3 text-lg font-bold text-[var(--logo-red)] mb-3">
+    <span id="num1" class="w-8 text-center"></span>
+    <span id="op" class="w-6 text-center">+</span>
+    <span id="num2" class="w-8 text-center"></span>
+    <span>=</span>
+    <input id="mathAnswer" type="number" class="w-20 border border-gray-300 rounded-lg p-2 text-center" />
+  </div>
+  <div class="flex items-center justify-center gap-3">
+    <button id="verifyBtn" class="px-5 py-2 rounded-2xl text-white btn-primary">ادامه</button>
+    <button id="regenBtn" class="px-4 py-2 rounded-2xl border border-gray-200 text-gray-700">تغییر</button>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="main-app" class="hidden mt-6 flex flex-col gap-4">
+  <header class="flex items-center justify-center bg-white rounded-2xl p-4 shadow-md border border-green-100 relative">
+    <img src="{{ url_for('static', filename='shahed_logo.png') }}" alt="لوگو دانشگاه" class="h-20 mr-3">
+    <div class="text-right">
+      <h1 class="text-lg font-bold text-[var(--logo-red)]">دستیار آیین‌نامه‌ای دانشگاه</h1>
+      <p class="text-sm text-gray-600">پاسخ‌ها بر اساس آیین‌نامه‌های بارگذاری‌شده ارائه می‌شود.</p>
+    </div>
+    <button id="openFeedbackBtn" class="absolute left-4 top-4 px-3 py-1 rounded-lg border text-sm">بازخورد</button>
+  </header>
+
+  <div class="bg-white rounded-2xl p-4 shadow-sm border-l-4 border-[var(--logo-green)]">
+    <p class="text-gray-700">این محیط برای پرسش و پاسخ دربارهٔ آیین‌نامه‌های دانشگاهی طراحی شده است. هر IP فقط هر 5 ثانیه یک سوال می‌تواند ارسال کند (کنترل‌شده در سرور).</p>
+  </div>
+
+  <div id="chat-box" class="bg-white rounded-2xl p-4 shadow-lg flex-1 overflow-y-auto" style="min-height: 360px; max-height: calc(100vh - 380px); direction: rtl;">
+    <!-- پیام‌ها اینجا اضافه میشن -->
+  </div>
+
+  <div class="flex items-center gap-3">
+    <input id="question" type="text" dir="rtl" placeholder="سوالت رو اینجا بنویس..." class="flex-1 px-4 py-3 rounded-2xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--logo-red)]"/>
+    <div class="flex flex-col items-end gap-2">
+      <button id="sendBtn" class="px-5 py-2 rounded-2xl text-white btn-primary">ارسال</button>
+      <div id="cooldown" class="cooldown"></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ABOUT MODAL -->
+<div id="aboutModal" class="hidden modal-backdrop">
+  <div class="modal-card">
+    <h3 class="text-xl font-bold text-[var(--logo-green)] mb-3">دربارهٔ پروژه</h3>
+    <div class="prose text-gray-800 mb-4" style="line-height:1.7">
+      <p>این سامانه نتیجهٔ پروژهٔ کارشناسی در دانشگاه شاهد می‌باشد.</p>
+      <p><strong>دانشجو:</strong> فاطمه غلامی<br>
+      <strong>استاد راهنما:</strong> جناب  دکتر وحید حقیقت‌دوست</p>
+
+      <p>سامانه با بهره‌گیری از فناوری‌های <strong>هوش مصنوعی</strong> و <strong>پردازش زبان طبیعی (NLP)</strong> طراحی شده است. در بخش بازیابی قوانین، از <strong>مدل BERT</strong> (به‌طور دقیق‌تر Sentence-BERT) برای محاسبهٔ شباهت معنایی بین پرسش دانشجو و متن آیین‌نامه استفاده شده است. سپس برای تولید پاسخ نهایی، از <strong>مدل LLaMA</strong> (نسخهٔ ۳.۳ با ۷۰ میلیارد پارامتر) استفاده می‌شود که یکی از قدرتمندترین مدل‌های زبانی امروزی است.</p>
+
+      <p>این ترکیب باعث می‌شود سامانه ابتدا بندهای مرتبط از آیین‌نامه‌ها را پیدا کرده و سپس پاسخی روان و قابل‌فهم بر اساس آن‌ها تولید نماید.</p>
+
+      <p>برای مشاهدهٔ کامل آیین‌نامه‌ها می‌توانید از پیوند زیر استفاده کنید:</p>
+      <p><a id="rulesLink" href="https://drive.google.com/drive/folders/1B3LuqlSGyZfIr7f-t3niJE8PMlT32-JZ?usp=drive_link" target="_blank" class="underline text-[var(--logo-red)]">[لینک آیین‌نامه‌ها — اینجا کلیک کنید]</a>
+      </p>
+      <p>برای دریافت پاسخ‌های دقیق‌تر، لطفاً سوال‌ها را کوتاه، روشن و بدون ایراد املایی مطرح کنید. از اینکه وقت گذاشتید و از این پروژه بازدید می‌کنید بی‌نهایت سپاسگزارم — ارسال بازخورد شما در بخش «بازخورد» نه‌فقط باعث دلگرمی است، که نقشی اساسی در بهبودِ نسخه‌های آتی خواهد داشت.</p>
+    </div>
+    <div class="flex items-center justify-end gap-3">
+      <button id="aboutClose" class="px-4 py-2 rounded-2xl border">بستن</button>
+      <button id="aboutConfirm" class="px-4 py-2 rounded-2xl text-white btn-primary">خواندم و ادامه می‌دهم</button>
+    </div>
+  </div>
+</div>
+
+<!-- FEEDBACK MODAL -->
+<div id="feedbackModal" class="hidden modal-backdrop">
+  <div class="modal-card">
+    <h3 class="text-lg font-bold text-[var(--logo-red)] mb-3">ارسال بازخورد</h3>
+    <p class="text-sm text-gray-600 mb-3">در این بخش چنانچه مطلبی برای آموزش مد نظر دارید، همچنین پیشنهادات خود برای بهبود کاربری سامانه را میتوانید ارسال نمایید.</p>
+    <div class="flex flex-col gap-3">
+      <input id="fbName" type="text" placeholder="نام (اختیاری)" class="px-3 py-2 border rounded-lg"/>
+      <textarea id="fbText" rows="6" placeholder="متن بازخورد..." class="px-3 py-2 border rounded-lg"></textarea>
+      <div class="flex items-center justify-end gap-2">
+        <button id="feedbackCancel" class="px-4 py-2 rounded-2xl border">لغو</button>
+        <button id="feedbackSend" class="px-4 py-2 rounded-2xl text-white btn-primary">ارسال بازخورد</button>
+      </div>
+    </div>
+    <div id="feedbackStatus" class="mt-3 text-sm text-gray-600"></div>
+  </div>
+</div>
+
+<script>
+// ---------- تولید سوال ریاضی ساده ----------
+let num1 = 0, num2 = 0, op = '+', correctAnswer = 0;
+const num1El = document.getElementById('num1');
+const num2El = document.getElementById('num2');
+const opEl = document.getElementById('op');
+const mathAnswer = document.getElementById('mathAnswer');
+const verifyBtn = document.getElementById('verifyBtn');
+const regenBtn = document.getElementById('regenBtn');
+const verifyBox = document.getElementById('verify-box');
+const mainApp = document.getElementById('main-app');
+const chatBox = document.getElementById('chat-box');
+const input = document.getElementById('question');
+const sendBtn = document.getElementById('sendBtn');
+const cooldownEl = document.getElementById('cooldown');
+const aboutModal = document.getElementById('aboutModal');
+const aboutTopBtn = document.getElementById('aboutTopBtn');
+const aboutClose = document.getElementById('aboutClose');
+const aboutConfirm = document.getElementById('aboutConfirm');
+const rulesLink = document.getElementById('rulesLink');
+const feedbackModal = document.getElementById('feedbackModal');
+const openFeedbackBtn = document.getElementById('openFeedbackBtn');
+const feedbackCancel = document.getElementById('feedbackCancel');
+const feedbackSend = document.getElementById('feedbackSend');
+const fbName = document.getElementById('fbName');
+const fbText = document.getElementById('fbText');
+const feedbackStatus = document.getElementById('feedbackStatus');
+
+function generateMath(){
+  num1 = Math.floor(Math.random() * 9) + 1;
+  num2 = Math.floor(Math.random() * 9) + 1;
+  op = Math.random() > 0.5 ? '+' : '-';
+  correctAnswer = (op === '+') ? (num1 + num2) : (num1 - num2);
+  num1El.textContent = num1;
+  num2El.textContent = num2;
+  opEl.textContent = op;
+  mathAnswer.value = '';
+  mathAnswer.focus();
+}
+generateMath();
+regenBtn.addEventListener('click', generateMath);
+
+// ---------- تایید پاسخ ----------
+verifyBtn.addEventListener('click', () => {
+  const user = parseInt(mathAnswer.value);
+  if (isNaN(user)) { alert('لطفاً پاسخ را وارد کنید.'); mathAnswer.focus(); return; }
+  if (user !== correctAnswer) { alert('پاسخ اشتباه است. دوباره تلاش کنید.'); generateMath(); return; }
+  verifyBox.classList.add('hidden');
+  showAboutModal();
+});
+
+function showAboutModal(){ aboutModal.classList.remove('hidden'); }
+function hideAboutModal(){ aboutModal.classList.add('hidden'); }
+aboutTopBtn.addEventListener('click', showAboutModal);
+aboutClose.addEventListener('click', () => { hideAboutModal(); });
+aboutConfirm.addEventListener('click', () => {
+  hideAboutModal();
+  mainApp.classList.remove('hidden');
+  input.focus();
+  appendBotMessage('سلام! من دستیار آیین‌نامه‌ای هستم. سوالت را بنویس تا بر اساس قوانین پاسخ بدهم.');
+});
+
+// ---------- پیام‌ها ----------
+function createBubbleElement(text, isUser=false){
+  const row = document.createElement('div');
+  row.className = `w-full flex ${isUser ? 'justify-end' : 'justify-start'} gap-3 mb-3`;
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble px-5 py-3 shadow-sm';
+  bubble.style.maxWidth = '82%';
+  bubble.style.borderRadius = 'var(--bubble-radius)';
+  bubble.style.whiteSpace = 'pre-wrap';
+  if(isUser){
+    bubble.classList.add('text-white');
+    bubble.style.background = 'var(--logo-red)';
+    bubble.style.borderBottomRightRadius = '6px';
+    bubble.style.borderBottomLeftRadius = '18px';
+    bubble.style.textAlign = 'right';
+    bubble.textContent = text;
+    row.appendChild(bubble);
+  } else {
+    const container = document.createElement('div');
+    container.className = 'flex items-start gap-2';
+    const logo = document.createElement('img');
+    logo.src = "{{ url_for('static', filename='shahed_logo.png') }}";
+    logo.alt = "لوگو";
+    logo.className = 'bot-bubble-logo';
+    container.appendChild(logo);
+    bubble.style.background = 'rgba(30,143,74,0.08)';
+    bubble.style.color = '#0f172a';
+    bubble.style.border = '1px solid rgba(30,143,74,0.12)';
+    bubble.style.textAlign = 'right';
+    bubble.textContent = text;
+    container.appendChild(bubble);
+    row.appendChild(container);
+  }
+  return row;
+}
+function appendBotMessage(text){ const el = createBubbleElement(text, false); chatBox.appendChild(el); chatBox.scrollTop = chatBox.scrollHeight; }
+function appendUserMessage(text){ const el = createBubbleElement(text, true); chatBox.appendChild(el); chatBox.scrollTop = chatBox.scrollHeight; }
+
+// ---------- ارسال سوال ----------
+let cooldownTimer = null;
+function startCooldown(seconds){
+  clearInterval(cooldownTimer);
+  let remaining = seconds;
+  sendBtn.disabled = true;
+  input.disabled = true;
+  updateCooldownText(remaining);
+  cooldownTimer = setInterval(()=>{
+    remaining--;
+    updateCooldownText(remaining);
+    if(remaining<=0){ clearInterval(cooldownTimer); sendBtn.disabled=false; input.disabled=false; cooldownEl.textContent=''; }
+  },1000);
+}
+function updateCooldownText(sec){ const m=Math.floor(sec/60); const s=sec%60; cooldownEl.textContent=`شما می‌توانید پس از ${m}:${s.toString().padStart(2,'0')} دوباره سوال بپرسید.`; }
+
+async function sendMessage(){
+  const question=input.value.trim(); if(!question)return;
+  appendUserMessage(question); input.value='';
+  try{
+    const res=await fetch('/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question})});
+    if(res.status===429){ let retrySeconds=120; const ra=res.headers.get('Retry-After'); if(ra){ const parsed=parseInt(ra); if(!isNaN(parsed)) retrySeconds=parsed; } const data=await res.json().catch(()=>({})); appendBotMessage(data.answer||data.detail||'شما در محدودیت زمانی هستید. لطفاً بعداً تلاش کنید.'); startCooldown(retrySeconds); return; }
+    if(!res.ok){ appendBotMessage('خطا در ارتباط با سرور. بعداً امتحان کنید.'); return; }
+    const data=await res.json(); appendBotMessage(data.answer||'پاسخ از سرور دریافت نشد.'); startCooldown(5);
+  } catch(err){ console.error(err); appendBotMessage('خطا در ارسال درخواست. اینترنت یا سرور را بررسی کنید.'); }
+}
+sendBtn.addEventListener('click', sendMessage);
+input.addEventListener('keydown',(e)=>{if(e.key==='Enter')sendMessage();});
+
+// ---------- Feedback ----------
+openFeedbackBtn.addEventListener('click',()=>{ feedbackStatus.textContent=''; fbName.value=''; fbText.value=''; feedbackModal.classList.remove('hidden'); });
+feedbackCancel.addEventListener('click',()=>{ feedbackModal.classList.add('hidden'); });
+feedbackSend.addEventListener('click',async()=>{
+  const name=fbName.value.trim(); const feedback=fbText.value.trim();
+  if(!feedback){ feedbackStatus.textContent='لطفاً متن بازخورد را وارد کنید.'; feedbackStatus.style.color='crimson'; return; }
+  feedbackStatus.textContent='در حال ارسال...'; feedbackStatus.style.color='#6b7280'; feedbackSend.disabled=true;
+  try{
+    const res=await fetch('/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,feedback})});
+    const data=await res.json();
+    if(res.ok && data.success){ feedbackStatus.textContent='بازخورد شما ثبت شد؛ سپاسگزاریم.'; feedbackStatus.style.color='green'; feedbackModal.classList.add('hidden'); appendBotMessage('بازخورد شما با موفقیت ثبت شد. ممنون از مشارکت شما!'); }
+    else{ feedbackStatus.textContent=data.message||'خطا در ارسال بازخورد.'; feedbackStatus.style.color='crimson'; }
+  }catch(err){ console.error(err); feedbackStatus.textContent='خطا در ارسال بازخورد. لطفاً بعداً تلاش کنید.'; feedbackStatus.style.color='crimson'; }
+  finally{ feedbackSend.disabled=false; }
+});
+</script>
+
+</body>
+</html>
