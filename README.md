@@ -52,7 +52,7 @@ python app.py
 
 Open in browser:
 
-http://localhost:5000
+[http://localhost:5000](http://193.162.129.238:5000/)
 
 📂 Project Structure
 .
