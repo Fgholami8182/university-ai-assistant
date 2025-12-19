@@ -19,11 +19,6 @@ The goal is to design a simple and user-friendly interface where students can as
 
 ---
 
-## 📸 Screenshots
-(Add some UI screenshots and Q&A examples here)
-
----
-
 ## ⚙️ Installation & Usage
 1. Clone the repository:
    ```bash
@@ -49,10 +44,6 @@ Run the application:
 
 python app.py
 
-
-Open in browser:
-
-[http://localhost:5000](http://193.162.129.238:5000/)
 
 📂 Project Structure
 .
@@ -95,9 +86,4 @@ Multi-language support
 Advanced search features
 
 Improved accessibility and UI design
-
-👨‍🏫 Supervisor & Reviewer
-
-Supervisor: [Supervisor Name]
-
-Reviewer: [Reviewer Name]
+Fateme Gholami
